@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Market Analyst" />
+  <title>Market Analyst AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #080c14;
+      --surface: #0a0f1a;
+      --border: #1a2535;
+      --border2: #253045;
+      --text: #c8d8e8;
+      --text-dim: #8a9fb8;
+      --text-muted: #4a6080;
+      --text-bright: #e8f0f8;
+      --accent: #f4c542;
+      --accent2: #ff9a3c;
+      --blue: #7eb8f7;
+      --green: #00d68f;
+      --red: #ff4d6d;
+      --red2: #ff6b6b;
+      --font: 'IBM Plex Mono', 'Courier New', monospace;
+    }
+
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* HEADER */
+    .header {
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .logo-title { font-size: 13px; font-weight: 700; letter-spacing: 0.15em; color: var(--accent); }
+    .logo-sub { font-size: 10px; color: var(--text-muted); letter-spacing: 0.1em; margin-top: 2px; }
+    .status { display: flex; gap: 6px; align-items: center; }
+    .status-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s infinite;
+    }
+    .status-text { font-size: 10px; color: var(--green); letter-spacing: 0.1em; }
+
+    /* MAIN */
+    .main { max-width: 860px; margin: 0 auto; padding: 28px 20px 60px; }
+
+    /* UPLOAD ZONE */
+    .upload-zone {
+      border: 2px dashed var(--border2);
+      border-radius: 8px;
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: rgba(255,255,255,0.01);
+      position: relative;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(244,197,66,0.03);
+    }
+    .upload-zone.has-image { padding: 16px; cursor: default; }
+    .upload-icon { font-size: 36px; opacity: 0.5; margin-bottom: 12px; }
+    .upload-title { font-size: 14px; color: var(--blue); margin-bottom: 6px; font-weight: 600; }
+    .upload-sub { font-size: 11px; color: var(--text-muted); }
+    .browse-btn {
+      margin-top: 20px;
+      display: inline-block;
+      padding: 8px 20px;
+      border: 1px solid var(--border2);
+      border-radius: 4px;
+      font-size: 11px;
+      color: var(--blue);
+      letter-spacing: 0.1em;
+    }
+    .chart-preview {
+      max-width: 100%;
+      max-height: 380px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      display: block;
+      margin: 0 auto;
+    }
+    .image-actions {
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    .img-btn {
+      padding: 6px 14px;
+      border: 1px solid var(--border2);
+      border-radius: 4px;
+      background: transparent;
+      font-size: 11px;
+      cursor: pointer;
+      font-family: var(--font);
+      letter-spacing: 0.08em;
+      transition: all 0.15s;
+    }
+    .img-btn.replace { color: var(--blue); }
+    .img-btn.replace:hover { border-color: var(--blue); }
+    .img-btn.clear { color: var(--red2); }
+    .img-btn.clear:hover { border-color: var(--red2); }
+
+    /* NOTE INPUT */
+    .note-section { margin-top: 16px; }
+    .label { font-size: 10px; color: var(--text-muted); letter-spacing: 0.1em; margin-bottom: 6px; }
+    .note-input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 12px;
+      font-family: var(--font);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .note-input:focus { border-color: var(--border2); }
+    .note-input::placeholder { color: #2a3a50; }
+
+    /* ANALYZE BUTTON */
+    .analyze-btn {
+      width: 100%;
+      margin-top: 16px;
+      padding: 14px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      cursor: pointer;
+      font-family: var(--font);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .analyze-btn.ready {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: var(--bg);
+    }
+    .analyze-btn.ready:hover { opacity: 0.9; transform: translateY(-1px); }
+    .analyze-btn.loading {
+      background: var(--border);
+      color: var(--text-muted);
+      cursor: not-allowed;
+    }
+    .spinner { animation: spin 1s linear infinite; display: inline-block; }
+
+    /* ERROR */
+    .error-box {
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: rgba(255,77,109,0.08);
+      border: 1px solid rgba(255,77,109,0.3);
+      border-radius: 6px;
+      color: var(--red);
+      font-size: 12px;
+    }
+
+    /* ANALYSIS OUTPUT */
+    .analysis-section { margin-top: 28px; }
+    .analysis-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .analysis-bar { width: 3px; height: 20px; background: var(--accent); border-radius: 2px; }
+    .analysis-title { font-size: 11px; color: var(--accent); letter-spacing: 0.15em; font-weight: 700; }
+    .analysis-time { margin-left: auto; font-size: 10px; color: var(--text-muted); }
+
+    .analysis-body {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      line-height: 1.85;
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .analysis-body strong { color: var(--text-bright); font-weight: 700; }
+    .analysis-body code { background: var(--border); padding: 1px 5px; border-radius: 3px; color: var(--accent); font-size: 11px; }
+
+    .line-entry { border-left: 2px solid var(--accent); padding-left: 12px; }
+    .line-sl    { border-left: 2px solid var(--red2); padding-left: 12px; }
+    .line-tp    { border-left: 2px solid var(--green); padding-left: 12px; }
+    .line-conf  { border-left: 2px solid var(--blue); padding-left: 12px; }
+    .line-risk  { border-left: 2px solid var(--accent2); padding-left: 12px; }
+
+    .disclaimer {
+      margin-top: 16px;
+      padding: 10px 14px;
+      background: rgba(255,154,60,0.05);
+      border: 1px solid rgba(255,154,60,0.15);
+      border-radius: 4px;
+      font-size: 10px;
+      color: #6a7a8a;
+      letter-spacing: 0.05em;
+    }
+
+    .reset-btn {
+      width: 100%;
+      margin-top: 16px;
+      padding: 11px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      cursor: pointer;
+      font-family: var(--font);
+      transition: all 0.15s;
+    }
+    .reset-btn:hover { border-color: var(--border2); color: var(--text-dim); }
+
+    .hidden { display: none !important; }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+    /* Mobile tweaks */
+    @media (max-width: 600px) {
+      .main { padding: 20px 14px 60px; }
+      .header { padding: 14px 16px; }
+      .upload-zone { padding: 36px 16px; }
+      .analysis-body { padding: 16px; font-size: 12px; }
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo-icon">📈</div>
+    <div>
+      <div class="logo-title">MARKET ANALYST AI</div>
+      <div class="logo-sub">CHART ANALYSIS ENGINE v2.0</div>
+    </div>
+  </div>
+  <div class="status">
+    <div class="status-dot"></div>
+    <span class="status-text">ONLINE</span>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- UPLOAD ZONE -->
+  <div class="upload-zone" id="uploadZone">
+    <div id="uploadPrompt">
+      <div class="upload-icon">📊</div>
+      <div class="upload-title">DROP CHART IMAGE HERE</div>
+      <div class="upload-sub">PNG · JPG · WebP · Screenshots from any platform</div>
+      <div class="browse-btn">OR TAP TO BROWSE</div>
+    </div>
+    <div id="imagePreview" class="hidden">
+      <img id="chartImg" class="chart-preview" src="" alt="Chart" />
+      <div class="image-actions">
+        <button class="img-btn replace" id="replaceBtn">REPLACE</button>
+        <button class="img-btn clear" id="clearBtn">CLEAR</button>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="fileInput" accept="image/*" style="display:none" />
+
+  <!-- NOTE INPUT -->
+  <div class="note-section hidden" id="noteSection">
+    <div class="label">ADDITIONAL CONTEXT (OPTIONAL)</div>
+    <input
+      type="text"
+      class="note-input"
+      id="noteInput"
+      placeholder="e.g. BTC/USD 4H, looking for long entries, news event tomorrow..."
+    />
+  </div>
+
+  <!-- ANALYZE BUTTON -->
+  <button class="analyze-btn ready hidden" id="analyzeBtn">
+    ▶&nbsp; ANALYZE CHART
+  </button>
+
+  <!-- ERROR -->
+  <div class="error-box hidden" id="errorBox"></div>
+
+  <!-- ANALYSIS OUTPUT -->
+  <div class="analysis-section hidden" id="analysisSection">
+    <div class="analysis-header">
+      <div class="analysis-bar"></div>
+      <div class="analysis-title">ANALYSIS REPORT</div>
+      <div class="analysis-time" id="analysisTime"></div>
+    </div>
+    <div class="analysis-body" id="analysisBody"></div>
+    <div class="disclaimer">
+      ⚠ DISCLAIMER: This analysis is for educational purposes only. Not financial advice.
+      Always conduct your own research and manage risk appropriately.
+    </div>
+    <button class="reset-btn" id="resetBtn">↺&nbsp; ANALYZE NEW CHART</button>
+  </div>
+
+</div>
+
+<script>
+  const SYSTEM_PROMPT = `You are an elite professional market analyst and trader with 20+ years of experience in technical analysis across forex, crypto, stocks, and commodities.
+
+When given a chart image, analyze it thoroughly and provide:
+
+1. **Market Context** - What asset, timeframe (if visible), and current trend direction
+2. **Key Levels** - Support and resistance zones visible on the chart
+3. **Technical Analysis** - Pattern recognition (head & shoulders, flags, wedges, channels, etc.), key indicators visible (MA, RSI, MACD, Bollinger Bands, etc.)
+4. **Trade Setups** - Give 1-2 high-probability trade setups:
+   - Direction (LONG/SHORT)
+   - Entry Price/Zone
+   - Stop Loss (with reasoning)
+   - Take Profit 1 (conservative)
+   - Take Profit 2 (extended)
+   - Risk:Reward ratio
+5. **Confidence Level** - Rate your confidence 1-10 and explain why
+6. **Risk Warning** - Brief note on what would invalidate this setup
+
+Format your response with clear headers and be specific with price levels when visible. If price levels aren't visible on the chart, describe zones in relative terms (e.g., "previous swing high", "breakout level").
+
+Be direct, professional, and actionable. Think like a prop trader managing real capital.`;
+
+  let imageBase64 = null;
+  let imageType = null;
+
+  const uploadZone   = document.getElementById('uploadZone');
+  const uploadPrompt = document.getElementById('uploadPrompt');
+  const imagePreview = document.getElementById('imagePreview');
+  const chartImg     = document.getElementById('chartImg');
+  const fileInput    = document.getElementById('fileInput');
+  const noteSection  = document.getElementById('noteSection');
+  const noteInput    = document.getElementById('noteInput');
+  const analyzeBtn   = document.getElementById('analyzeBtn');
+  const errorBox     = document.getElementById('errorBox');
+  const analysisSection = document.getElementById('analysisSection');
+  const analysisBody = document.getElementById('analysisBody');
+  const analysisTime = document.getElementById('analysisTime');
+  const replaceBtn   = document.getElementById('replaceBtn');
+  const clearBtn     = document.getElementById('clearBtn');
+  const resetBtn     = document.getElementById('resetBtn');
+
+  function showError(msg) {
+    errorBox.textContent = '⚠ ' + msg;
+    errorBox.classList.remove('hidden');
+  }
+  function hideError() { errorBox.classList.add('hidden'); }
+
+  function processFile(file) {
+    if (!file || !file.type.startsWith('image/')) {
+      showError('Please upload an image file (PNG, JPG, WebP)');
+      return;
+    }
+    hideError();
+    analysisSection.classList.add('hidden');
+    imageType = file.type;
+
+    const url = URL.createObjectURL(file);
+    chartImg.src = url;
+    uploadPrompt.classList.add('hidden');
+    imagePreview.classList.remove('hidden');
+    uploadZone.classList.add('has-image');
+    noteSection.classList.remove('hidden');
+    analyzeBtn.classList.remove('hidden');
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      imageBase64 = e.target.result.split(',')[1];
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function reset() {
+    imageBase64 = null;
+    imageType = null;
+    chartImg.src = '';
+    noteInput.value = '';
+    uploadPrompt.classList.remove('hidden');
+    imagePreview.classList.add('hidden');
+    uploadZone.classList.remove('has-image');
+    noteSection.classList.add('hidden');
+    analyzeBtn.classList.add('hidden');
+    analysisSection.classList.add('hidden');
+    hideError();
+    fileInput.value = '';
+  }
+
+  // Drag & drop
+  uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+  uploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    processFile(e.dataTransfer.files[0]);
+  });
+  uploadZone.addEventListener('click', (e) => {
+    if (!imageBase64) fileInput.click();
+  });
+  fileInput.addEventListener('change', (e) => processFile(e.target.files[0]));
+  replaceBtn.addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); });
+  clearBtn.addEventListener('click', (e) => { e.stopPropagation(); reset(); });
+  resetBtn.addEventListener('click', reset);
+
+  function getLineClass(text) {
+    const t = text.toLowerCase();
+    if (t.includes('entry') || (t.includes('long') && !t.includes('short'))) return 'line-entry';
+    if (t.includes('stop loss') || t.includes('sl')) return 'line-sl';
+    if (t.includes('take profit') || t.includes('tp')) return 'line-tp';
+    if (t.includes('confidence')) return 'line-conf';
+    if (t.includes('risk') || t.includes('short')) return 'line-risk';
+    return '';
+  }
+
+  function renderAnalysis(text) {
+    analysisBody.innerHTML = '';
+    const lines = text.split('\n');
+    lines.forEach(line => {
+      if (!line.trim()) {
+        const spacer = document.createElement('div');
+        spacer.style.height = '8px';
+        analysisBody.appendChild(spacer);
+        return;
+      }
+      const div = document.createElement('div');
+      const cls = getLineClass(line);
+      if (cls) div.classList.add(cls);
+      const isBold = /^\*\*.*\*\*/.test(line) || /^#+\s/.test(line);
+      if (isBold) { div.style.marginTop = '14px'; div.style.marginBottom = '4px'; }
+      else { div.style.marginBottom = '3px'; }
+
+      // Format bold, italic, code
+      let html = line
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>');
+      div.innerHTML = html;
+      analysisBody.appendChild(div);
+    });
+  }
+
+  analyzeBtn.addEventListener('click', async () => {
+    if (!imageBase64) return;
+    hideError();
+    analyzeBtn.classList.add('loading');
+    analyzeBtn.classList.remove('ready');
+    analyzeBtn.innerHTML = '<span class="spinner">⟳</span> ANALYZING CHART...';
+    analyzeBtn.disabled = true;
+    analysisSection.classList.add('hidden');
+
+    try {
+      const userContent = [
+        {
+          type: 'image',
+          source: { type: 'base64', media_type: imageType || 'image/png', data: imageBase64 }
+        },
+        {
+          type: 'text',
+          text: noteInput.value.trim()
+            ? `Analyze this chart. Additional context from trader: "${noteInput.value.trim()}"`
+            : 'Analyze this chart and provide trade setups.'
+        }
+      ];
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: SYSTEM_PROMPT,
+          messages: [{ role: 'user', content: userContent }]
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err?.error?.message || `API error ${response.status}`);
+      }
+
+      const data = await response.json();
+      const text = (data.content || []).find(b => b.type === 'text')?.text || '';
+      if (!text) throw new Error('No analysis returned.');
+
+      analysisTime.textContent = new Date().toLocaleTimeString();
+      renderAnalysis(text);
+      analysisSection.classList.remove('hidden');
+      analysisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    } catch (err) {
+      showError('Analysis failed: ' + (err.message || 'Please try again.'));
+    } finally {
+      analyzeBtn.classList.remove('loading');
+      analyzeBtn.classList.add('ready');
+      analyzeBtn.innerHTML = '▶&nbsp; ANALYZE CHART';
+      analyzeBtn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
